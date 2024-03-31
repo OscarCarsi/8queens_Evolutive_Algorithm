@@ -87,18 +87,39 @@ def get_queens(board):
                 queens.add((i, j))
     return queens
 
-#seleccionamos al azar 4 reinas de cada tablero
-def select_random_queens(queens):
+#seleccionamos al azar n reinas de cada tablero (según se necesiten)
+def select_random_queens(queens, num_queens):
     queens_list = list(queens)
-    return set(random.sample(queens_list, 4))
+    return set(random.sample(queens_list, num_queens))
+
+def mutate(board, size_board):
+    # Obtiene las reinas del tablero
+    queens = get_queens(board)
+    # Obtiene las posiciones ocupadas
+    occupied_positions = set(queens)
+    # Selecciona una reina al azar
+    selected_queen = select_random_queens(queens, num_queens=1).pop()
+    # Se toman posiciones aleatorias en fila y columna para colocar las reinas
+    row, col = random.randint(0, size_board - 1), random.randint(0, size_board - 1)
+    # Se verifica que la posición no este ocupada
+    while (row, col) in occupied_positions:
+        # Si la posición esta ocupada se toman nuevas posiciones
+        row, col = random.randint(0, size_board - 1), random.randint(0, size_board - 1)
+    # Se quita la reina de su posición original 
+    board[selected_queen[0]][selected_queen[1]] = 0
+    # Se coloca la reina en la nueva posición
+    board[row][col] = 1
+    return board
+        
+
 
 #combinamos las reinas seleccionadas al azar, en un nuevo tablero
 def crossover(board1, board2):
     queens_board1 = get_queens(board1)
-    selected_queens1 = select_random_queens(queens_board1)
+    selected_queens1 = select_random_queens(queens_board1, num_queens=4)
 
     queens_board2 = get_queens(board2)
-    selected_queens2 = select_random_queens(queens_board2)
+    selected_queens2 = select_random_queens(queens_board2, num_queens=4)
 
     # Combinamos las reinas de los dos tableros padres
     combined_queens = selected_queens1.union(selected_queens2)
@@ -126,6 +147,7 @@ def print_board_with_queens(coordinates):
 def main():
     size_board = 8
     num_boards = 100
+    mutate_prob = 0.8
     boards = create_boards(size_board, num_boards)
     selectBoards = select_random_boards(boards)
     bestBoards = select_best_boards(selectBoards)
@@ -138,10 +160,17 @@ def main():
         print()
 
     crossoverresult = crossover(bestBoards[0], bestBoards[1])
-    print("Coordenadas de las reinas en la cruza:", crossoverresult)
-    print_board_with_queens(crossoverresult)
+    print("Resultado del cruce:")
+    for i, row in enumerate(crossoverresult):
+        print(' '.join(str(cell) for cell in row))
     conflicts = calculate_fitness(crossoverresult)
     print(f"Conflictos: {conflicts}")
+    if random.random() < mutate_prob:
+        mutated_board = mutate(crossoverresult, size_board)
+        print("Tablero mutado:")
+        print_board_with_queens(mutated_board)
+        conflicts = calculate_fitness(mutated_board)
+        print(f"Conflictos: {conflicts}")
 
 
 if __name__ == "__main__":
