@@ -79,6 +79,50 @@ def select_best_boards(boards):
     # Regreso los padres
     return parents
 
+def get_queens(board):
+    queens = set()
+    for i, row in enumerate(board):
+        for j, element in enumerate(row):
+            if element == 1:
+                queens.add((i, j))
+    return queens
+
+#seleccionamos al azar 4 reinas de cada tablero
+def select_random_queens(queens):
+    queens_list = list(queens)
+    return set(random.sample(queens_list, 4))
+
+#combinamos las reinas seleccionadas al azar, en un nuevo tablero
+def crossover(board1, board2):
+    queens_board1 = get_queens(board1)
+    selected_queens1 = select_random_queens(queens_board1)
+
+    queens_board2 = get_queens(board2)
+    selected_queens2 = select_random_queens(queens_board2)
+
+    # Combinamos las reinas de los dos tableros padres
+    combined_queens = selected_queens1.union(selected_queens2)
+
+    # checamos si alguna coordenada se repite de ser asi no es compatible la cruza
+    if len(combined_queens) < len(selected_queens1) + len(selected_queens2):
+        print("Crossover is incompatible! The following coordinates are repeated:")
+        repeated_coordinates = selected_queens1.intersection(selected_queens2)
+        print(repeated_coordinates)
+
+        # Create a new 8x8 board
+    new_board = [[0] * 8 for _ in range(8)]
+
+    # Place the queens on the new board
+    for coord in combined_queens:
+        new_board[coord[0]][coord[1]] = 1
+
+    return new_board
+
+
+def print_board_with_queens(coordinates):
+        for row in coordinates:
+            print(' '.join(str(cell) for cell in row))
+
 def main():
     size_board = 8
     num_boards = 100
@@ -92,6 +136,13 @@ def main():
         conflicts = calculate_fitness(board)
         print(f"Conflictos: {conflicts}")
         print()
+
+    crossoverresult = crossover(bestBoards[0], bestBoards[1])
+    print("Coordenadas de las reinas en la cruza:", crossoverresult)
+    print_board_with_queens(crossoverresult)
+    conflicts = calculate_fitness(crossoverresult)
+    print(f"Conflictos: {conflicts}")
+
 
 if __name__ == "__main__":
     main()
