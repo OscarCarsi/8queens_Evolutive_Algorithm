@@ -79,6 +79,28 @@ def select_best_boards(boards):
     # Regreso los padres
     return parents
 
+def replace(selected_boards, final_board):
+    # Calcula la aptitud del tablero final
+    final_fitness = calculate_fitness(final_board)
+
+    # Calcula la aptitud de todos los tableros seleccionados
+    fitnesses = [calculate_fitness(board) for board in selected_boards]
+
+    # Encuentra el índice del tablero con el mayor número de choques
+    worst_board_index = fitnesses.index(max(fitnesses))
+
+    # Obtiene la aptitud del peor tablero
+    worst_board_fitness = fitnesses[worst_board_index]
+
+    # Si el tablero final es mejor que el peor tablero seleccionado, reemplaza el peor tablero
+    if final_fitness < worst_board_fitness:
+        selected_boards[worst_board_index] = final_board
+        print("The final board was selected and remplaced the worst board.")
+    else:
+        print("The final board wasnt selected.")
+
+    return selected_boards
+
 def get_queens(board):
     queens = set()
     for i, row in enumerate(board):
@@ -151,14 +173,6 @@ def main():
     boards = create_boards(size_board, num_boards)
     selectBoards = select_random_boards(boards)
     bestBoards = select_best_boards(selectBoards)
-    for i, board in enumerate(bestBoards):
-        print(f"Tablero {i+1}:")
-        for row in board:
-            print(' '.join(str(cell) for cell in row))
-        conflicts = calculate_fitness(board)
-        print(f"Conflictos: {conflicts}")
-        print()
-
     crossoverresult = crossover(bestBoards[0], bestBoards[1])
     print("Resultado del cruce:")
     for i, row in enumerate(crossoverresult):
@@ -166,12 +180,21 @@ def main():
     conflicts = calculate_fitness(crossoverresult)
     print(f"Conflictos: {conflicts}")
     if random.random() < mutate_prob:
-        mutated_board = mutate(crossoverresult, size_board)
+        final_board = mutate(crossoverresult, size_board)
         print("Tablero mutado:")
-        print_board_with_queens(mutated_board)
-        conflicts = calculate_fitness(mutated_board)
+        print_board_with_queens(final_board)
+        conflicts = calculate_fitness(final_board)
         print(f"Conflictos: {conflicts}")
-
+    else:
+        final_board = crossoverresult
+    final_boards = replace(selectBoards, final_board)
+    for i, board in enumerate(final_boards):
+        print(f"Tablero {i+1}:")
+        for row in board:
+            print(' '.join(str(cell) for cell in row))
+        conflicts = calculate_fitness(board)
+        print(f"Conflictos: {conflicts}")
+        print()
 
 if __name__ == "__main__":
     main()
