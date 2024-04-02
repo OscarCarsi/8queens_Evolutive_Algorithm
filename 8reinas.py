@@ -1,5 +1,6 @@
 #Importa el modulo random para generar los aleatorios que se necesitaran
 import random as random;
+import matplotlib.pyplot as plt
 
 #se hace la generación de un tablero con las reinas en posiciones aleatorias
 
@@ -79,6 +80,25 @@ def select_best_boards(boards):
     # Regreso los padres
     return parents
 
+def replace(population, final_board):
+    # Calcula la aptitud del tablero final
+    final_fitness = calculate_fitness(final_board)
+
+    # Calcula la aptitud de todos los tableros en la población
+    fitnesses = [calculate_fitness(board) for board in population]
+
+    # Encuentra el índice del tablero con el mayor número de choques
+    worst_board_index = fitnesses.index(max(fitnesses))
+
+    # Obtiene la aptitud del peor tablero
+    worst_board_fitness = fitnesses[worst_board_index]
+
+    # Si el tablero final es mejor que el peor tablero en la población, reemplaza el peor tablero
+    if final_fitness < worst_board_fitness:
+        population[worst_board_index] = final_board
+
+    return population
+
 def get_queens(board):
     queens = set()
     for i, row in enumerate(board):
@@ -129,6 +149,7 @@ def crossover(board1, board2):
         print("Crossover is incompatible! The following coordinates are repeated:")
         repeated_coordinates = selected_queens1.intersection(selected_queens2)
         print(repeated_coordinates)
+        return None
 
         # Create a new 8x8 board
     new_board = [[0] * 8 for _ in range(8)]
@@ -148,30 +169,62 @@ def main():
     size_board = 8
     num_boards = 100
     mutate_prob = 0.8
-    boards = create_boards(size_board, num_boards)
-    selectBoards = select_random_boards(boards)
-    bestBoards = select_best_boards(selectBoards)
-    for i, board in enumerate(bestBoards):
-        print(f"Tablero {i+1}:")
-        for row in board:
-            print(' '.join(str(cell) for cell in row))
-        conflicts = calculate_fitness(board)
-        print(f"Conflictos: {conflicts}")
-        print()
+    max_evaluations = 10000
+    evaluations = 0
+    best_fitnesses = []  # Lista para rastrear la aptitud del mejor tabñero
+    boards = create_boards(size_board, num_boards) # Se crean los tableros
+    while evaluations < max_evaluations: # Se realizan las evaluaciones
+        for i, board in enumerate(boards): #Se recorren los tableros
+            conflicts = calculate_fitness(board) #Se calculan los conflictos
+            print(f"Tablero {i+1}:")
+            print_board_with_queens(board) #Se imprime el tablero
+            print(f"Conflictos: {conflicts}")
+            best_fitness = min(calculate_fitness(board) for board in boards) #Se obtiene el mejor tablero
+            best_fitnesses.append(best_fitness) #Se agrega a la lista de mejores aptitudes
+            evaluations += 1
+            if conflicts == 0: #Si no hay conflictos se imprime el tablero y se termina el programa
+                print(f"Solución encontrada en el tablero {i+1}:")
+                print_board_with_queens(board)
+                print(f"Evaluaciones: {evaluations}")
 
-    crossoverresult = crossover(bestBoards[0], bestBoards[1])
-    print("Resultado del cruce:")
-    for i, row in enumerate(crossoverresult):
-        print(' '.join(str(cell) for cell in row))
-    conflicts = calculate_fitness(crossoverresult)
-    print(f"Conflictos: {conflicts}")
-    if random.random() < mutate_prob:
-        mutated_board = mutate(crossoverresult, size_board)
-        print("Tablero mutado:")
-        print_board_with_queens(mutated_board)
-        conflicts = calculate_fitness(mutated_board)
-        print(f"Conflictos: {conflicts}")
+                # Grafica la convergencia
+                plt.plot(best_fitnesses)
+                plt.title('Convergencia')
+                plt.xlabel('Evaluaciones')
+                plt.ylabel('Choques')
+                plt.show()
 
+                return
+        descendants = [] # Se crea una lista para los descendientes
+        while len(descendants) < 10: # Se generan 10 descendientes
+            # Selecciona 5 tableros aleatorios
+            selectBoards = select_random_boards(boards)
+            # Selecciona los dos mejores tableros
+            bestBoards = select_best_boards(selectBoards)
+            # Cruza los dos mejores tableros
+            crossoverresult = crossover(bestBoards[0], bestBoards[1])
+            # Si la cruza es compatible
+            if crossoverresult is not None:
+                # Si el valor aleatorio es menor a la probabilidad de mutación, se muta el tablero
+                if random.random() < mutate_prob:
+                    final_board = mutate(crossoverresult, size_board)
+                else:
+                    # Si no se muta el tablero, se asigna el tablero resultante de la cruza
+                    final_board = crossoverresult
+                # Se agrega el tablero a la lista de descendientes
+                descendants.append(final_board)
+
+        # Reemplaza los tableros menos aptos en la población con los nuevos descendientes
+        for descendant in descendants:
+            boards = replace(boards, descendant)
+
+    print("No se encontró una solución después de 10,000 evaluaciones.")
+    # Grafica la convergencia
+    plt.plot(best_fitnesses)
+    plt.title('Convergencia')
+    plt.xlabel('Evaluaciones')
+    plt.ylabel('Choques')
+    plt.show()
 
 if __name__ == "__main__":
     main()
